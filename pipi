@@ -1,0 +1,12 @@
+Makefile
+pipi
+readcmd.c
+readcmd.h
+readcmd.o
+shell
+shell.c
+shell.o
+tst
+tst.c
+tst.o
+pouet

@@ -15,8 +15,8 @@ pid_t globalPID;
 
 int main()
 {
-	signal(SIGINT, traiteSignal);
-	signal(SIGTSTP, traiteSignal);
+	signal(SIGINT,traiteSignal);
+	signal(SIGTSTP,traiteSignal);
 	while (1) {
 		struct cmdline *l;
 		int i, j;
@@ -62,16 +62,14 @@ void runCmd(struct cmdline * strCmd){
 	    if ((child_pid = fork()) == 0){
 				signal(SIGINT, SIG_DFL);
 				signal(SIGTSTP, SIG_DFL);
-		        if(strCmd->out != NULL)
-				{
+		    if(strCmd->out != NULL){
 					int fd = open(strCmd->out,O_WRONLY | O_CREAT | O_TRUNC ,S_IRUSR | S_IWUSR);
 					if(dup2(fd, STDOUT_FILENO)<0){
 						printf("Erreur sur le dup2 ");
 						exit(1);
 					}
 					close(fd);
-
-		        }
+		    }
 
 				if(strCmd->in != NULL)
 				{
@@ -172,13 +170,13 @@ void traiteSignal(int signal_recu) {
     switch (signal_recu) {
         case SIGINT :
 					printf("Cédric est un dieu");
-			//	if(globalPID>0)
-				//	kill(globalPID,SIGINT);
+					if(globalPID>0)
+						kill(globalPID,SIGINT);
         break;
 				case SIGTSTP :
-					printf("Cédric est un dieu");
-			//	if(globalPID>0)
-			//		kill(globalPID,SIGTSTP);
+					printf("Cédric est un moche");
+					if(globalPID>0)
+						kill(globalPID,SIGTSTP);
 				break;
     		default:
           printf("Signal inattendu\n");

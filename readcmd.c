@@ -185,7 +185,7 @@ struct cmdline *readcmd(void)
 	s->out = 0;
 	s->seq = 0;
 	s->bg = 0;
-
+  s->nbCmd = 0;
 	i = 0;
 	while ((w = words[i++]) != 0) {
 		switch (w[0]) {
@@ -227,6 +227,7 @@ struct cmdline *readcmd(void)
 
 			seq = xrealloc(seq, (seq_len + 2) * sizeof(char **));
 			seq[seq_len++] = cmd;
+			s->nbCmd++;
 			seq[seq_len] = 0;
 
 			cmd = xmalloc(sizeof(char *));
@@ -243,6 +244,7 @@ struct cmdline *readcmd(void)
 	if (cmd_len != 0) {
 		seq = xrealloc(seq, (seq_len + 2) * sizeof(char **));
 		seq[seq_len++] = cmd;
+		s->nbCmd++;
 		seq[seq_len] = 0;
 	} else if (seq_len != 0) {
 		s->err = "misplaced pipe";

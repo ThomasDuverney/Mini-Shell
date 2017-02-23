@@ -16,7 +16,7 @@ pid_t globalPID;
 int main()
 {
 	signal(SIGINT, traiteSignal);
-	//signal(SIGTSTP, traiteSignal);
+	signal(SIGTSTP, traiteSignal);
 	while (1) {
 		struct cmdline *l;
 		int i, j;
@@ -38,7 +38,7 @@ int main()
 
 		if (l->in) printf("in: %s\n", l->in);
 		if (l->out) printf("out: %s\n", l->out);
-		if (l->bg) printf("bg: %i\n", l->bg);
+		if (l->nbCmd) printf("nb: %i\n", l->nbCmd);
 
 		/* Display each command of the pipe */
 		for (i=0; l->seq[i]!=0; i++) {
@@ -56,11 +56,12 @@ int main()
 
 void runCmd(struct cmdline * strCmd){
     pid_t child_pid;
-    int child_status;
+    //int child_status;
 	if(strCmd->seq[1] == NULL){ // Une seule commande
 
 	    if ((child_pid = fork()) == 0){
-
+				signal(SIGINT, SIG_DFL);
+				signal(SIGTSTP, SIG_DFL);
 		        if(strCmd->out != NULL)
 				{
 					int fd = open(strCmd->out,O_WRONLY | O_CREAT | O_TRUNC ,S_IRUSR | S_IWUSR);
@@ -95,13 +96,13 @@ void runCmd(struct cmdline * strCmd){
 		        }
 		}
 		else{
-			 waitpid(-1,NULL,strCmd->bg);
+			waitpid(-1,NULL,strCmd->bg);
 		}
 	}
 	else{ // Plusieurs commandes avec pipe
 			 //int p[2];
 			 //int ** desctable = malloc(sizeof(int*)*10);
-			 int desctable[10][2];
+			 int desctable[strCmd->nbCmd-1][2];
 			 int i =0;
 			 pid_t pid = getpid();
 
@@ -170,15 +171,16 @@ void traiteSignal(int signal_recu) {
 
     switch (signal_recu) {
         case SIGINT :
-			if(globalPID>0)
-				kill(globalPID,SIGINT);
-            break;
-		case SIGTSTP :
-				printf("Cédric est un dieu");
-				if(globalPID>0)
-					kill(globalPID,SIGTSTP);
-			break;
-        default:
-            printf("Signal inattendu\n");
+					printf("Cédric est un dieu");
+			//	if(globalPID>0)
+				//	kill(globalPID,SIGINT);
+        break;
+				case SIGTSTP :
+					printf("Cédric est un dieu");
+			//	if(globalPID>0)
+			//		kill(globalPID,SIGTSTP);
+				break;
+    		default:
+          printf("Signal inattendu\n");
     }
 }

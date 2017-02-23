@@ -17,6 +17,7 @@ struct cmdline {
 	char *in;	/* If not null : name of file for input redirection. */
 	char *out;	/* If not null : name of file for output redirection. */
 	int bg;
+	int nbCmd;
 	char ***seq;	/* See comment below */
 };
 

@@ -17,6 +17,7 @@ int main()
 {
 	signal(SIGINT,traiteSignal);
 	signal(SIGTSTP,traiteSignal);
+	signal(SIGCHLD, traiteSignal);
 	while (1) {
 		struct cmdline *l;
 		int i, j;
@@ -169,16 +170,21 @@ void traiteSignal(int signal_recu) {
 
     switch (signal_recu) {
         case SIGINT :
-					printf("Cédric est un dieu");
-					if(globalPID>0)
-						kill(globalPID,SIGINT);
-        break;
-				case SIGTSTP :
-					printf("Cédric est un moche");
-					if(globalPID>0)
-						kill(globalPID,SIGTSTP);
-				break;
-    		default:
+			printf("Thomas est une stéphanoise");
+			if(globalPID>0)
+				kill(globalPID,SIGINT);
+        	break;
+		case SIGTSTP :
+			printf("Thomas est une brestoise");
+			if(globalPID>0)
+				kill(globalPID,SIGTSTP);
+			break;
+		case SIGCHILD :
+			int status;
+			printf("SIGCHLD détecté !\n");
+			//gestion des zombies
+			while(waitpid(-1, &status, WNOHANG) > 0);
+		default:
           printf("Signal inattendu\n");
     }
 }

@@ -15,5 +15,4 @@ shell : shell.o readcmd.o
 shell.o : readcmd.h
 tst.o :   readcmd.h
 
-clean:
-	rm -f shell.o readcmd.o tst tst.o
+clean: rm -f shell.o readcmd.o tst tst.o

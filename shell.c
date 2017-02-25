@@ -20,7 +20,7 @@ int executer_commandes_arriere_plan(struct cmdline * strCmd);
 pid_t globalPID = 0;
 
 int main(){
-	// Redifinition des handlers de signaux
+	// Redéfinition des handlers de signaux
 	signal(SIGINT,traite_signal);
 	signal(SIGTSTP,traite_signal);
 	signal(SIGCHLD,traite_signal);

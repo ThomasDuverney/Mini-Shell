@@ -1,7 +1,8 @@
 /*
  * Copyright (C) 2017, Florian Barrois, Thomas Duverney
  */
-
+#define _POSIX_SOURCE
+#define _DEFAULT_SOURCE
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -10,20 +11,19 @@
 #include "readcmd.h"
 #include <signal.h>
 
-//void runCmd(struct cmdline * strCmd);
 void traite_signal(int signal_recu) ;
 void affiche_invite();
 void executer_commandes(struct cmdline * strCmd);
 void execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** descTable);
 int executer_commandes_arriere_plan(struct cmdline * strCmd);
 
-static pid_t globalPID;
+pid_t globalPID = 0;
 
 int main()
 {
 	signal(SIGINT,traite_signal);
 	signal(SIGTSTP,traite_signal);
-	signal(SIGCHLD,traite_signal);
+	//signal(SIGCHLD,traite_signal);
 	while (1) {
 		struct cmdline *l;
 		affiche_invite();
@@ -47,7 +47,6 @@ void traite_signal(int signal_recu) {
 			printf("valeur de global : %i",globalPID);
     switch (signal_recu) {
         case SIGINT :
-
 					if(globalPID>0)
 						kill(globalPID,SIGINT);
         	break;
@@ -61,7 +60,7 @@ void traite_signal(int signal_recu) {
 					break;
 				case SIGCHLD :
 					printf("SIGCHLD détecté !\n");
-					while(waitpid(-1,NULL, WNOHANG) > 0);
+					//while(waitpid(-1,NULL, WNOHANG) > 0);
 					break;
     		default:
           printf("Signal inattendu\n");
@@ -98,6 +97,7 @@ void executer_commandes(struct cmdline * strCmd){
 }
 
 void execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** descTable){
+	pid_t pidFils;
 	// Si on a plusieurs commande
  if (numCmd != strCmd->nbCmd - 1) {
 	 			// création d'un pipe dans le tableau de pipe
@@ -108,8 +108,7 @@ void execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** des
         }
  }
  // Création d'un fils pour executer la commande
- if ((globalPID = fork()) == 0){
-
+ if ((pidFils = fork()) == 0){
 	 // Si on a une redirection en entrée sur la première commande
 	 if( numCmd==0 && strCmd->in != NULL ){
 		 int fd = open(strCmd->in, O_RDONLY,S_IRUSR | S_IWUSR);
@@ -155,13 +154,11 @@ void execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** des
 	}
 	signal(SIGINT,SIG_DFL);
 	signal(SIGTSTP,SIG_DFL);
-	signal(SIGCHLD,SIG_DFL);
 /* On execute la commande*/
 	if (execvp(strCmd->seq[numCmd][0],strCmd->seq[numCmd]) < 0){
 		printf("*** ERROR: exec failed\n");
 		exit(1);
 	}
-
 /* Dans le père on ferme les pipes précédent au fur et à mesure
 	 si on est pas la première commande*/
  }else{
@@ -170,14 +167,16 @@ void execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** des
 		 close(descTable[numCmd-1][0]);
 	 }
  }
+ globalPID = pidFils;
 }
 
 int executer_commandes_arriere_plan(struct cmdline * strCmd){
 /* Si il n'y a pas de commande suivante et que l'esperluette est présent
 	dans la commande*/
-	if( strCmd->seq[1] == NULL && strCmd->bg == 1){
-			setpgid(getpid(),getpid()); // Change le groupe du processus pour pas être tué par son père
-		  if (fork() == 0){
+	pid_t pidFils;
+	if( strCmd->seq[1] == NULL && strCmd->bg == WNOHANG){
+		  if ((pidFils = fork()) == 0){
+				setpgid(pidFils,pidFils); // Change le groupe du processus pour pas être tué par son père
 				if (execvp(strCmd->seq[0][0], strCmd->seq[0]) < 0)	{  // execute la commande
 						printf("*** ERROR: exec failed\n");
 						exit(1);

@@ -14,16 +14,16 @@
 void traite_signal(int signal_recu) ;
 void affiche_invite();
 void executer_commandes(struct cmdline * strCmd);
-void execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** descTable);
+pid_t execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** descTable);
 int executer_commandes_arriere_plan(struct cmdline * strCmd);
 
 pid_t globalPID = 0;
 
-int main()
-{
+int main(){
+	// Redifinition des handler de signaux
 	signal(SIGINT,traite_signal);
 	signal(SIGTSTP,traite_signal);
-	//signal(SIGCHLD,traite_signal);
+	signal(SIGCHLD,traite_signal);
 	while (1) {
 		struct cmdline *l;
 		affiche_invite();
@@ -44,23 +44,22 @@ int main()
 }
 
 void traite_signal(int signal_recu) {
-			printf("valeur de global : %i",globalPID);
     switch (signal_recu) {
+			/* Si SIGINT et que globalPID est défini alors
+					envoi du signal SIGINT au PID*/
         case SIGINT :
 					if(globalPID>0)
 						kill(globalPID,SIGINT);
         	break;
+		/* Si SIGTSTP et que globalPID est défini alors
+				envoi du signal SIGTSTP au PID*/
 				case SIGTSTP :
-					printf("le pid de l'appelant %i",getpid());
-					if(globalPID>0){
-						printf("Je tue");
-						fflush(stdout);
+					if(globalPID>0)
 						kill(globalPID,SIGTSTP);
-					}
 					break;
+		/* Si SIGCHLD on n'attend pas le processus*/
 				case SIGCHLD :
-					printf("SIGCHLD détecté !\n");
-					//while(waitpid(-1,NULL, WNOHANG) > 0);
+					while(waitpid(-1,NULL, WNOHANG) > 0);
 					break;
     		default:
           printf("Signal inattendu\n");
@@ -79,14 +78,14 @@ void affiche_invite(void) {
 
 void executer_commandes(struct cmdline * strCmd){
 	if(!executer_commandes_arriere_plan(strCmd)){
-
+		pid_t pidFils;
 		int **descTable = malloc(sizeof(int *)*strCmd->nbCmd-1); // Tableau de pipes
 		for (int i = 0; i < strCmd->nbCmd; i++) {
 				// on lance l'exécution de la commande dans un fils
-				execute_commande_dans_un_fils(i,strCmd,descTable);
+				pidFils =execute_commande_dans_un_fils(i,strCmd,descTable);
 		}
 		// Le père attends à la mort de tout ses fils
-		while(waitpid(-1,NULL,0)>0);
+		waitpid(pidFils,NULL,WUNTRACED);
 
 		//On libère le talbeau de pipes
 		for (int j=0; j<strCmd->nbCmd-1; j++)
@@ -96,7 +95,7 @@ void executer_commandes(struct cmdline * strCmd){
  }
 }
 
-void execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** descTable){
+pid_t execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** descTable){
 	pid_t pidFils;
 	// Si on a plusieurs commande
  if (numCmd != strCmd->nbCmd - 1) {
@@ -168,6 +167,7 @@ void execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** des
 	 }
  }
  globalPID = pidFils;
+ return pidFils;
 }
 
 int executer_commandes_arriere_plan(struct cmdline * strCmd){
@@ -182,7 +182,7 @@ int executer_commandes_arriere_plan(struct cmdline * strCmd){
 						exit(1);
 				}
 			}else{
-				waitpid(-1,NULL,strCmd->bg); // Le père n'attends pas son fils, WHNOANG
+				waitpid(-1,NULL,WNOHANG); // Le père n'attends pas son fils, WHNOANG
 			}
 			return 1;
  }else{return 0;}

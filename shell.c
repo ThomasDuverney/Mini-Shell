@@ -20,7 +20,7 @@ int executer_commandes_arriere_plan(struct cmdline * strCmd);
 pid_t globalPID = 0;
 
 int main(){
-	// Redifinition des handler de signaux
+	// Redifinition des handlers de signaux
 	signal(SIGINT,traite_signal);
 	signal(SIGTSTP,traite_signal);
 	signal(SIGCHLD,traite_signal);
@@ -38,36 +38,37 @@ int main(){
 			printf("error: %s\n", l->err);
 			continue;
 		}
-    executer_commandes(l);
-
+   		executer_commandes(l);
 	}
 }
 
 void traite_signal(int signal_recu) {
     switch (signal_recu) {
-			/* Si SIGINT et que globalPID est défini alors
-					envoi du signal SIGINT au PID*/
+	/* Si SIGINT et que globalPID est défini alors
+			envoi du signal SIGINT au PID*/
         case SIGINT :
-					if(globalPID>0)
-						kill(globalPID,SIGINT);
+		if(globalPID>0)
+			kill(globalPID,SIGINT);
         	break;
-		/* Si SIGTSTP et que globalPID est défini alors
-				envoi du signal SIGTSTP au PID*/
-				case SIGTSTP :
-					if(globalPID>0)
-						kill(globalPID,SIGTSTP);
-					break;
-		/* Si SIGCHLD on n'attend pas le processus*/
-				case SIGCHLD :
-					while(waitpid(-1,NULL, WNOHANG) > 0);
-					break;
-    		default:
+		    
+	/* Si SIGTSTP et que globalPID est défini alors
+			envoi du signal SIGTSTP au PID*/
+	case SIGTSTP :
+		if(globalPID>0)
+			kill(globalPID,SIGTSTP);
+		break;
+		    
+	/* Si SIGCHLD on n'attend pas le processus*/
+	case SIGCHLD :
+		while(waitpid(-1,NULL, WNOHANG) > 0);
+		break;
+    	default:
           printf("Signal inattendu\n");
     }
 }
 
 void affiche_invite(void) {
-    // insére le nom du répertoire courant
+    // insère le nom du répertoire courant
 			char * chemin = malloc(50);
 		 	chemin = getcwd(chemin,100);
 			char * user = getenv("USER");
@@ -84,29 +85,28 @@ void executer_commandes(struct cmdline * strCmd){
 				// on lance l'exécution de la commande dans un fils
 				pidFils =execute_commande_dans_un_fils(i,strCmd,descTable);
 		}
-		// Le père attends à la mort de tout ses fils
+		// Le père attend la mort de tous ses fils
 		waitpid(pidFils,NULL,WUNTRACED);
 
-		//On libère le talbeau de pipes
+		//On libère le tableau de pipes
 		for (int j=0; j<strCmd->nbCmd-1; j++)
 				free(descTable[j]);
 		free(descTable);
-
  }
 }
 
 pid_t execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** descTable){
 	pid_t pidFils;
-	// Si on a plusieurs commande
- if (numCmd != strCmd->nbCmd - 1) {
-	 			// création d'un pipe dans le tableau de pipe
-	 			descTable[numCmd] = malloc(sizeof(int)*2);
+	// Si on a plusieurs commandes
+	if (numCmd != strCmd->nbCmd - 1) {
+		// création d'un pipe dans le tableau de pipes
+		descTable[numCmd] = malloc(sizeof(int)*2);
         if (pipe(descTable[numCmd]) == -1) {
             perror("Echec création tube");
             exit(1);
         }
  }
- // Création d'un fils pour executer la commande
+ // Création d'un fils pour exécuter la commande
  if ((pidFils = fork()) == 0){
 	 // Si on a une redirection en entrée sur la première commande
 	 if( numCmd==0 && strCmd->in != NULL ){
@@ -118,7 +118,7 @@ pid_t execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** de
 		 close(fd);
 	 }
 	 /* Si c'est la première commande, on redirige la sortie
-	 		à l'entré du pipe*/
+	 		à l'entrée du pipe*/
 	 if(numCmd == 0){
 		 if(numCmd != strCmd->nbCmd - 1){
 			 dup2(descTable[numCmd][1], STDOUT_FILENO);
@@ -158,8 +158,8 @@ pid_t execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** de
 		printf("*** ERROR: exec failed\n");
 		exit(1);
 	}
-/* Dans le père on ferme les pipes précédent au fur et à mesure
-	 si on est pas la première commande*/
+/* Dans le père on ferme les pipes précédents au fur et à mesure
+	 si on n'est pas la première commande*/
  }else{
 	 if(numCmd!=0){
 		 close(descTable[numCmd-1][1]);
@@ -171,18 +171,18 @@ pid_t execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** de
 }
 
 int executer_commandes_arriere_plan(struct cmdline * strCmd){
-/* Si il n'y a pas de commande suivante et que l'esperluette est présent
+/* Si il n'y a pas de commande suivante et que l'esperluette est présente
 	dans la commande*/
 	pid_t pidFils;
 	if( strCmd->seq[1] == NULL && strCmd->bg == WNOHANG){
 		  if ((pidFils = fork()) == 0){
-				setpgid(pidFils,pidFils); // Change le groupe du processus pour pas être tué par son père
-				if (execvp(strCmd->seq[0][0], strCmd->seq[0]) < 0)	{  // execute la commande
+				setpgid(pidFils,pidFils); // Change le groupe du processus pour ne pas être tué par son père
+				if (execvp(strCmd->seq[0][0], strCmd->seq[0]) < 0)	{  // exécute la commande
 						printf("*** ERROR: exec failed\n");
 						exit(1);
 				}
 			}else{
-				waitpid(-1,NULL,WNOHANG); // Le père n'attends pas son fils, WHNOANG
+				waitpid(-1,NULL,WNOHANG); // Le père n'attend pas son fils, WHNOANG
 			}
 			return 1;
  }else{return 0;}

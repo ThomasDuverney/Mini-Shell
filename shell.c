@@ -1,8 +1,6 @@
 /*
  * Copyright (C) 2017, Florian Barrois, Thomas Duverney
  */
-#define _POSIX_SOURCE
-#define _DEFAULT_SOURCE
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -16,6 +14,7 @@ void affiche_invite();
 void executer_commandes(struct cmdline * strCmd);
 pid_t execute_commande_dans_un_fils(int numCmd,struct cmdline * strCmd,int ** descTable);
 int executer_commandes_arriere_plan(struct cmdline * strCmd);
+//int commande_interne(struct cmdline * strCmd);
 
 pid_t globalPID = 0;
 
@@ -71,7 +70,7 @@ void affiche_invite(void) {
 			char * chemin = malloc(50);
 		 	chemin = getcwd(chemin,100);
 			char * user = getenv("USER");
-			printf("%s>",user);
+			printf("%s@%s#",user,chemin);
 			fflush(stdout);
 			free(chemin);
 }
@@ -182,8 +181,18 @@ int executer_commandes_arriere_plan(struct cmdline * strCmd){
 						exit(1);
 				}
 			}else{
-				waitpid(-1,NULL,WNOHANG); // Le père n'attends pas son fils, WHNOANG
+				waitpid(-1,NULL,WNOHANG); // Le père n'attends pas son fils, WNOHANG
 			}
 			return 1;
  }else{return 0;}
 }
+/*
+int commande_interne(struct cmdline * strCmd){
+	if(!strcmp(strCmd->seq[0][0],"jobs")){
+
+	}
+
+}
+int mon_jobs(){
+
+}*/
